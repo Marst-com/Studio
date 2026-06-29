@@ -800,16 +800,14 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebas
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
 import { getDatabase, ref, set, get, update, push, remove, onValue, off, query as rtq, orderByChild, limitToLast } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-database.js";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyDhvA3YebaSga9BaovHHiGe9Qt7nmzK114",
-  authDomain: "marst-marst.firebaseapp.com",
-  databaseURL: "https://console.firebase.google.com/u/1/project/marst-marst/database/marst-marst-default-rtdb/data/~2F?hl=ko",
-  projectId: "marst-marst",
-  storageBucket: "marst-marst.firebasestorage.app",
-  messagingSenderId: "168628482145",
-  appId: "1:168628482145:web:bdb657a23ef03591e87a20",
-  measurementId: "G-Z2SX7D7MKB"
-};
+  const firebaseConfig = {
+    apiKey: "AIzaSyDhvA3YebaSga9BaovHHiGe9Qt7nmzK114",
+    authDomain: "marst-marst.firebaseapp.com",
+    projectId: "marst-marst",
+    storageBucket: "marst-marst.firebasestorage.app",
+    messagingSenderId: "168628482145",
+    appId: "1:168628482145:web:bdb657a23ef03591e87a20",
+  };
 
 const app  = initializeApp(firebaseConfig);
 const auth = getAuth(app);
