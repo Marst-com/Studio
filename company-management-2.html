@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MARST — 회사 관리 시스템</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Space+Grotesk:wght@400;600;700&display=swap');
+  :root {
+    --bg:#0d0f14; --surface:#161920; --surface2:#1e2330; --border:#2a2f3d;
+    --accent:#5b6ef5; --accent2:#8b5cf6; --gold:#f0b429; --green:#22c55e;
+    --red:#ef4444; --text:#e8eaf0; --muted:#6b7280; --radius:12px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+
+  /* LOGIN */
+  #loginPage{display:flex;align-items:center;justify-content:center;min-height:100vh;background:radial-gradient(ellipse at 60% 40%,#1a1f35 0%,var(--bg) 70%);}
+  .loginCard{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:48px 40px;width:100%;max-width:440px;box-shadow:0 32px 80px rgba(0,0,0,.5);}
+  .loginLogo{font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700;letter-spacing:-1px;color:#fff;margin-bottom:8px;}
+  .loginLogo span{color:var(--accent);}
+  .loginSub{color:var(--muted);font-size:14px;margin-bottom:28px;}
+  .roleTabs{display:flex;gap:8px;margin-bottom:24px;}
+  .roleTab{flex:1;padding:9px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .2s;}
+  .roleTab.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px;}
+  .field input,.field select{width:100%;padding:11px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:14px;font-family:inherit;outline:none;transition:border-color .2s;}
+  .field input:focus,.field select:focus{border-color:var(--accent);}
+  .field select option{background:var(--surface2);}
+  .btnPrimary{width:100%;padding:13px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border:none;border-radius:var(--radius);font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;transition:opacity .2s;margin-top:4px;}
+  .btnPrimary:hover{opacity:.9;}
+  .loginToggle{text-align:center;margin-top:16px;font-size:13px;color:var(--muted);}
+  .loginToggle a{color:var(--accent);cursor:pointer;}
+  .errMsg{color:var(--red);font-size:13px;margin-top:8px;text-align:center;}
+  .hidden{display:none!important;}
+
+  /* APP */
+  #app{display:none;height:100vh;overflow:hidden;}
+  .sidebar{position:fixed;left:0;top:0;bottom:0;width:240px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:100;}
+  .sidebarLogo{padding:24px 20px 18px;font-family:'Space Grotesk',sans-serif;font-size:19px;font-weight:700;color:#fff;border-bottom:1px solid var(--border);}
+  .sidebarLogo span{color:var(--accent);}
+  .sidebarBadge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;margin-left:6px;vertical-align:middle;}
+  .badge-owner{background:rgba(240,180,41,.2);color:var(--gold);}
+  .badge-staff{background:rgba(91,110,245,.2);color:var(--accent);}
+  .navList{flex:1;padding:10px 0;overflow-y:auto;}
+  .navItem{display:flex;align-items:center;gap:12px;padding:10px 18px;cursor:pointer;color:var(--muted);font-size:14px;font-weight:500;transition:all .15s;position:relative;}
+  .navItem:hover{color:var(--text);background:rgba(255,255,255,.04);}
+  .navItem.active{color:var(--accent);background:rgba(91,110,245,.12);}
+  .navItem.active::before{content:'';position:absolute;left:0;top:6px;bottom:6px;width:3px;background:var(--accent);border-radius:0 4px 4px 0;}
+  .navIcon{font-size:17px;min-width:22px;}
+  .navDivider{height:1px;background:var(--border);margin:8px 16px;}
+  .navSection{padding:8px 18px 4px;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;font-weight:600;}
+  .sidebarUser{padding:14px 18px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+  .avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0;}
+  .userInfo{flex:1;min-width:0;}
+  .userName{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .userRole{font-size:11px;color:var(--muted);}
+  .logoutBtn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;}
+  .logoutBtn:hover{color:var(--red);}
+
+  .main{margin-left:240px;height:100vh;overflow-y:auto;padding:28px 32px;}
+  .pageHeader{margin-bottom:24px;display:flex;align-items:center;justify-content:space-between;}
+  .pageTitle{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:#fff;}
+  .pageSubtitle{font-size:13px;color:var(--muted);margin-top:3px;}
+
+  .panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:18px;}
+  .panelTitle{font-size:14px;font-weight:600;color:var(--text);margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+
+  .statGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:20px;}
+  .statCard{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;}
+  .statLabel{font-size:11px;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;}
+  .statValue{font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;color:#fff;}
+  .statSub{font-size:11px;color:var(--muted);margin-top:3px;}
+
+  .table{width:100%;border-collapse:collapse;font-size:13px;}
+  .table th{text-align:left;padding:9px 14px;color:var(--muted);font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);}
+  .table td{padding:12px 14px;border-bottom:1px solid rgba(42,47,61,.5);vertical-align:middle;}
+  .table tr:last-child td{border-bottom:none;}
+  .table tr:hover td{background:rgba(255,255,255,.02);}
+
+  .btn{padding:7px 16px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:none;font-family:inherit;transition:opacity .2s,transform .1s;}
+  .btn:active{transform:scale(.97);}
+  .btn-accent{background:var(--accent);color:#fff;}
+  .btn-accent:hover{opacity:.85;}
+  .btn-outline{background:transparent;border:1px solid var(--border);color:var(--text);}
+  .btn-outline:hover{border-color:var(--accent);color:var(--accent);}
+  .btn-danger{background:rgba(239,68,68,.15);color:var(--red);border:1px solid rgba(239,68,68,.25);}
+  .btn-danger:hover{background:rgba(239,68,68,.25);}
+  .btn-green{background:rgba(34,197,94,.15);color:var(--green);border:1px solid rgba(34,197,94,.25);}
+  .btn-green:hover{background:rgba(34,197,94,.25);}
+  .btn-gold{background:rgba(240,180,41,.15);color:var(--gold);border:1px solid rgba(240,180,41,.25);}
+  .btn-sm{padding:4px 10px;font-size:11px;}
+
+  .formGroup{margin-bottom:14px;}
+  .formGroup label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px;}
+  .formGroup input,.formGroup select,.formGroup textarea{width:100%;padding:9px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;font-family:inherit;outline:none;transition:border-color .2s;}
+  .formGroup input:focus,.formGroup select:focus,.formGroup textarea:focus{border-color:var(--accent);}
+  .formGroup textarea{resize:vertical;min-height:72px;}
+  .formGroup select option{background:var(--surface2);}
+  .formRow{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+
+  .gradeBadge{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;}
+  .grade-bronze{background:rgba(180,103,46,.2);color:#cd7f32;border:1px solid rgba(205,127,50,.3);}
+  .grade-silver{background:rgba(160,160,160,.2);color:#c0c0c0;border:1px solid rgba(192,192,192,.3);}
+  .grade-gold{background:rgba(240,180,41,.2);color:var(--gold);border:1px solid rgba(240,180,41,.3);}
+  .grade-diamond{background:rgba(91,110,245,.2);color:#a78bfa;border:1px solid rgba(167,139,250,.3);}
+  .grade-vip{background:rgba(239,68,68,.2);color:#f87171;border:1px solid rgba(248,113,113,.3);}
+
+  .tag{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;}
+  .tag-pending{background:rgba(240,180,41,.15);color:var(--gold);}
+  .tag-complete{background:rgba(34,197,94,.15);color:var(--green);}
+  .tag-reject{background:rgba(239,68,68,.15);color:var(--red);}
+
+  .pointBadge{display:inline-flex;align-items:center;gap:3px;padding:3px 10px;background:rgba(240,180,41,.12);color:var(--gold);border-radius:20px;font-size:12px;font-weight:600;}
+
+  /* chat */
+  .chatWrap{display:flex;flex-direction:column;height:calc(100vh - 180px);}
+  .chatMessages{flex:1;overflow-y:auto;padding:14px;background:var(--surface2);border-radius:var(--radius);margin-bottom:12px;display:flex;flex-direction:column;gap:10px;}
+  .chatMsg{display:flex;gap:9px;align-items:flex-start;}
+  .chatMsg.mine{flex-direction:row-reverse;}
+  .chatAvatar{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#374151,#1f2937);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;}
+  .chatAvatar.owner{background:linear-gradient(135deg,#f0b429,#f59e0b);}
+  .chatAvatar.mine{background:linear-gradient(135deg,var(--accent),var(--accent2));}
+  .chatBubble{max-width:60%;background:var(--surface);border:1px solid var(--border);border-radius:12px 12px 12px 4px;padding:9px 13px;}
+  .chatMsg.mine .chatBubble{background:linear-gradient(135deg,rgba(91,110,245,.25),rgba(139,92,246,.25));border-color:rgba(91,110,245,.4);border-radius:12px 12px 4px 12px;}
+  .chatSender{font-size:10px;color:var(--muted);margin-bottom:3px;}
+  .chatText{font-size:13px;line-height:1.5;}
+  .chatTime{font-size:10px;color:var(--muted);margin-top:3px;text-align:right;}
+  .chatInputRow{display:flex;gap:8px;}
+  .chatInputRow input{flex:1;padding:11px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:13px;font-family:inherit;outline:none;}
+  .chatInputRow input:focus{border-color:var(--accent);}
+
+  /* grade progress */
+  .gradeProgressBar{height:5px;background:var(--surface2);border-radius:3px;overflow:hidden;margin:6px 0;}
+  .gradeProgressFill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:3px;transition:width .5s;}
+
+  /* modal */
+  .modalOverlay{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(4px);z-index:200;display:flex;align-items:center;justify-content:center;}
+  .modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;width:100%;max-width:460px;box-shadow:0 32px 80px rgba(0,0,0,.5);}
+  .modalTitle{font-size:17px;font-weight:700;margin-bottom:18px;}
+  .modalActions{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;}
+
+  /* toast */
+  #toastContainer{position:fixed;bottom:20px;right:20px;z-index:300;display:flex;flex-direction:column;gap:7px;}
+  .toast{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:11px 16px;font-size:13px;color:var(--text);box-shadow:0 8px 32px rgba(0,0,0,.4);animation:slideIn .3s ease;display:flex;align-items:center;gap:9px;min-width:220px;}
+  .toast.success{border-left:3px solid var(--green);}
+  .toast.error{border-left:3px solid var(--red);}
+  .toast.info{border-left:3px solid var(--accent);}
+  @keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+
+  ::-webkit-scrollbar{width:5px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+  ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+
+  .emptyState{text-align:center;padding:50px 20px;color:var(--muted);}
+  .emptyIcon{font-size:40px;margin-bottom:10px;}
+
+  @media(max-width:768px){
+    .sidebar{width:56px;}
+    .navItem span,.sidebarLogo .lt,.sidebarUser .userInfo,.sidebarUser .logoutBtn,.navSection,.sidebarBadge{display:none;}
+    .main{margin-left:56px;padding:18px 14px;}
+    .formRow{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginPage">
+  <div class="loginCard">
+    <div class="loginLogo">MARST<span>.</span></div>
+    <div class="loginSub">회사 관리 시스템</div>
+
+    <div id="loginForm">
+      <div class="roleTabs">
+        <button class="roleTab active" onclick="setRole('owner')">👑 사장</button>
+        <button class="roleTab" onclick="setRole('staff')">👤 직원</button>
+      </div>
+      <div class="field" id="companyCodeField" style="display:none">
+        <label>회사 코드</label>
+        <input type="text" id="loginCompanyCode" placeholder="사장님이 알려준 코드">
+      </div>
+      <div class="field">
+        <label>이메일</label>
+        <input type="email" id="loginEmail" placeholder="email@company.com">
+      </div>
+      <div class="field">
+        <label>비밀번호</label>
+        <input type="password" id="loginPw" placeholder="••••••••">
+      </div>
+      <button class="btnPrimary" onclick="doLogin()">로그인</button>
+      <p class="errMsg hidden" id="loginErr"></p>
+      <div class="loginToggle">계정이 없으신가요? <a onclick="showSignup()">회원가입</a></div>
+    </div>
+
+    <div id="signupForm" class="hidden">
+      <div class="roleTabs">
+        <button class="roleTab active" id="suRoleOwner" onclick="setSignupRole('owner')">👑 사장 (회사 생성)</button>
+        <button class="roleTab" id="suRoleStaff" onclick="setSignupRole('staff')">👤 직원 (회사 가입)</button>
+      </div>
+      <div class="field">
+        <label>이름</label>
+        <input type="text" id="suName" placeholder="홍길동">
+      </div>
+      <div class="field" id="suCompanyNameField">
+        <label>회사명</label>
+        <input type="text" id="suCompanyName" placeholder="(주)마르스트">
+      </div>
+      <div class="field" id="suCompanyCodeField" style="display:none">
+        <label>회사 코드 (사장님께 받은 코드)</label>
+        <input type="text" id="suCompanyCode" placeholder="예: MARST-1234">
+      </div>
+      <div class="field">
+        <label>이메일</label>
+        <input type="email" id="suEmail" placeholder="email@company.com">
+      </div>
+      <div class="field">
+        <label>비밀번호</label>
+        <input type="password" id="suPw" placeholder="6자 이상">
+      </div>
+      <button class="btnPrimary" onclick="doSignup()">가입하기</button>
+      <p class="errMsg hidden" id="signupErr"></p>
+      <div class="loginToggle">이미 계정이 있으신가요? <a onclick="showLogin()">로그인</a></div>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <nav class="sidebar">
+    <div class="sidebarLogo">
+      MARST<span>.</span>
+      <span class="sidebarBadge" id="roleBadge"></span>
+    </div>
+    <div class="navList" id="navList"></div>
+    <div class="sidebarUser">
+      <div class="avatar" id="sidebarAvatar">?</div>
+      <div class="userInfo">
+        <div class="userName" id="sidebarName">—</div>
+        <div class="userRole" id="sidebarCompany">—</div>
+      </div>
+      <button class="logoutBtn" onclick="doLogout()">↩</button>
+    </div>
+  </nav>
+  <main class="main" id="mainContent"></main>
+</div>
+
+<!-- TOAST -->
+<div id="toastContainer"></div>
+
+<script type="module">
+import { initializeApp }   from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged }
+  from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
+import { getDatabase, ref, set, get, update, push, remove, onValue, off }
+  from "https://www.gstatic.com/firebasejs/11.0.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey:            "AIzaSyDhvA3YebaSga9BaovHHiGe9Qt7nmzK114",
+  authDomain:        "marst-marst.firebaseapp.com",
+  databaseURL:       "https://marst-marst-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId:         "marst-marst",
+  storageBucket:     "marst-marst.firebasestorage.app",
+  messagingSenderId: "168628482145",
+  appId:             "1:168628482145:web:bdb657a23ef03591e87a20"
+};
+
+const app  = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db   = getDatabase(app);
+
+let CU = null;   // currentUser (Firebase Auth)
+let ME = null;   // my profile from DB
+let listeners = {};
+
+function listenPath(path, cb) {
+  if (listeners[path]) off(ref(db, path), 'value', listeners[path]);
+  listeners[path] = cb;
+  onValue(ref(db, path), cb);
+}
+function offAll() {
+  Object.entries(listeners).forEach(([p, cb]) => off(ref(db, p), 'value', cb));
+  listeners = {};
+}
+
+// ── UTILS ──
+const fmt     = n  => Number(n||0).toLocaleString('ko-KR');
+const fmtDate = ts => { if(!ts)return'—'; const d=new Date(ts); return`${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; };
+const nowMs   = ()  => Date.now();
+const today   = ()  => new Date().toISOString().split('T')[0];
+const randCode= ()  => Math.random().toString(36).slice(2,8).toUpperCase();
+
+window.showToast = (msg, type='info') => {
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.innerHTML = `<span>${{success:'✅',error:'❌',info:'ℹ️'}[type]||'ℹ️'}</span><span>${msg}</span>`;
+  document.getElementById('toastContainer').appendChild(t);
+  setTimeout(() => t.remove(), 3500);
+};
+
+// ── GRADE ──
+const GRADES = [
+  {name:'브론즈',emoji:'🥉',cls:'bronze', min:0,       rate:.01 },
+  {name:'실버',  emoji:'🥈',cls:'silver', min:500000,  rate:.015},
+  {name:'골드',  emoji:'🥇',cls:'gold',   min:2000000, rate:.02 },
+  {name:'다이아',emoji:'💎',cls:'diamond',min:5000000, rate:.03 },
+  {name:'VIP',   emoji:'👑',cls:'vip',    min:10000000,rate:.05 },
+];
+const getGrade = s => [...GRADES].reverse().find(g => s >= g.min) || GRADES[0];
+
+// ── LOGIN UI ──
+let loginRole  = 'owner';
+let signupRole = 'owner';
+
+window.setRole = role => {
+  loginRole = role;
+  document.querySelectorAll('#loginForm .roleTab').forEach((t,i)=>t.classList.toggle('active',i===(role==='owner'?0:1)));
+  document.getElementById('companyCodeField').style.display = role==='staff'?'block':'none';
+};
+window.setSignupRole = role => {
+  signupRole = role;
+  document.getElementById('suRoleOwner').classList.toggle('active', role==='owner');
+  document.getElementById('suRoleStaff').classList.toggle('active', role==='staff');
+  document.getElementById('suCompanyNameField').style.display = role==='owner'?'block':'none';
+  document.getElementById('suCompanyCodeField').style.display = role==='staff'?'block':'none';
+};
+window.showSignup = () => { document.getElementById('loginForm').classList.add('hidden'); document.getElementById('signupForm').classList.remove('hidden'); };
+window.showLogin  = () => { document.getElementById('signupForm').classList.add('hidden'); document.getElementById('loginForm').classList.remove('hidden'); };
+
+// ── AUTH ──
+window.doLogin = async () => {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pw    = document.getElementById('loginPw').value;
+  const code  = document.getElementById('loginCompanyCode').value.trim().toUpperCase();
+  const errEl = document.getElementById('loginErr');
+  errEl.classList.add('hidden');
+  try {
+    const cred = await signInWithEmailAndPassword(auth, email, pw);
+    // 직원이면 회사코드 검증
+    if (loginRole === 'staff' && code) {
+      const snap = await get(ref(db, `users/${cred.user.uid}`));
+      const profile = snap.val();
+      if (!profile || profile.companyCode !== code) {
+        await signOut(auth);
+        errEl.textContent = '회사 코드가 맞지 않습니다';
+        errEl.classList.remove('hidden');
+        return;
+      }
+    }
+  } catch {
+    errEl.textContent = '이메일 또는 비밀번호가 올바르지 않습니다';
+    errEl.classList.remove('hidden');
+  }
+};
+
+window.doSignup = async () => {
+  const name    = document.getElementById('suName').value.trim();
+  const email   = document.getElementById('suEmail').value.trim();
+  const pw      = document.getElementById('suPw').value;
+  const errEl   = document.getElementById('signupErr');
+  errEl.classList.add('hidden');
+
+  if (!name) { errEl.textContent='이름을 입력해주세요'; errEl.classList.remove('hidden'); return; }
+
+  try {
+    if (signupRole === 'owner') {
+      const companyName = document.getElementById('suCompanyName').value.trim();
+      if (!companyName) { errEl.textContent='회사명을 입력해주세요'; errEl.classList.remove('hidden'); return; }
+      const code = randCode();
+      const cred = await createUserWithEmailAndPassword(auth, email, pw);
+      await set(ref(db, `users/${cred.user.uid}`), {
+        name, email, role:'owner', companyName, companyCode:code,
+        companyId: cred.user.uid, points:0, totalSpend:0, createdAt:nowMs()
+      });
+      await set(ref(db, `companies/${cred.user.uid}`), {
+        name:companyName, code, ownerId:cred.user.uid, createdAt:nowMs()
+      });
+      showToast(`회사 생성 완료! 코드: ${code}`, 'success');
+    } else {
+      const code = document.getElementById('suCompanyCode').value.trim().toUpperCase();
+      if (!code) { errEl.textContent='회사 코드를 입력해주세요'; errEl.classList.remove('hidden'); return; }
+      // 코드로 회사 찾기
+      const snap = await get(ref(db, 'companies'));
+      const companies = snap.val() || {};
+      const entry = Object.entries(companies).find(([,c])=>c.code===code);
+      if (!entry) { errEl.textContent='존재하지 않는 회사 코드입니다'; errEl.classList.remove('hidden'); return; }
+      const [companyId, company] = entry;
+      const cred = await createUserWithEmailAndPassword(auth, email, pw);
+      await set(ref(db, `users/${cred.user.uid}`), {
+        name, email, role:'staff', companyName:company.name, companyCode:code,
+        companyId, points:0, totalSpend:0, grade:'브론즈', createdAt:nowMs()
+      });
+      showToast('가입 완료!', 'success');
+    }
+  } catch(e) {
+    errEl.textContent = e.code==='auth/email-already-in-use'?'이미 사용 중인 이메일':'가입에 실패했습니다';
+    errEl.classList.remove('hidden');
+  }
+};
+
+window.doLogout = async () => { offAll(); await signOut(auth); };
+
+// ── AUTH STATE ──
+onAuthStateChanged(auth, async user => {
+  if (user) {
+    CU = user;
+    const snap = await get(ref(db, `users/${user.uid}`));
+    ME = snap.val();
+    if (!ME) { await signOut(auth); return; }
+
+    document.getElementById('loginPage').style.display = 'none';
+    document.getElementById('app').style.display = 'flex';
+    document.getElementById('sidebarAvatar').textContent  = (ME.name||'?')[0].toUpperCase();
+    document.getElementById('sidebarName').textContent    = ME.name;
+    document.getElementById('sidebarCompany').textContent = ME.companyName || '—';
+    const rb = document.getElementById('roleBadge');
+    rb.textContent = ME.role==='owner'?'사장':'직원';
+    rb.className   = `sidebarBadge ${ME.role==='owner'?'badge-owner':'badge-staff'}`;
+
+    buildNav();
+    subscribeAll();
+    showPage('dashboard');
+  } else {
+    CU = ME = null;
+    offAll();
+    document.getElementById('loginPage').style.display = 'flex';
+    document.getElementById('app').style.display = 'none';
+  }
+});
+
+// ── NAV ──
+function buildNav() {
+  const isOwner = ME.role === 'owner';
+  const commonNav = [
+    {id:'dashboard', icon:'🏠', label:'대시보드'},
+    {id:'purchase',  icon:'🛒', label:'구매'},
+    {id:'points',    icon:'⭐', label:'포인트'},
+    {id:'grade',     icon:'🏅', label:'회사 등급'},
+    {id:'chat',      icon:'💬', label:'대화'},
+    {id:'submit',    icon:'✅', label:'제출(완료)'},
+  ];
+  const ownerNav = [
+    {id:'employees', icon:'👥', label:'직원 관리'},
+    {id:'approvals', icon:'📋', label:'승인 관리'},
+  ];
+  let html = commonNav.map(n=>`<div class="navItem" id="nav-${n.id}" onclick="showPage('${n.id}')"><span class="navIcon">${n.icon}</span><span>${n.label}</span></div>`).join('');
+  if (isOwner) {
+    html += `<div class="navDivider"></div><div class="navSection">사장 메뉴</div>`;
+    html += ownerNav.map(n=>`<div class="navItem" id="nav-${n.id}" onclick="showPage('${n.id}')"><span class="navIcon">${n.icon}</span><span>${n.label}</span></div>`).join('');
+  }
+  document.getElementById('navList').innerHTML = html;
+}
+
+window.showPage = id => {
+  document.querySelectorAll('.navItem').forEach(n=>n.classList.remove('active'));
+  const el = document.getElementById(`nav-${id}`);
+  if (el) el.classList.add('active');
+  const renders = {
+    dashboard: renderDashboard,
+    purchase:  renderPurchase,
+    points:    renderPoints,
+    grade:     renderGrade,
+    chat:      renderChatPage,
+    submit:    renderSubmit,
+    employees: renderEmployees,
+    approvals: renderApprovals,
+  };
+  if (renders[id]) renders[id]();
+};
+
+// ── REALTIME DATA ──
+let DATA = { profile:{}, purchases:{}, pointHistory:{}, submits:{}, chat:{}, employees:{} };
+
+function subscribeAll() {
+  const uid = CU.uid;
+  const cid = ME.companyId;
+
+  listenPath(`users/${uid}`, s => {
+    DATA.profile = s.val()||{};
+    ME = {...ME, ...DATA.profile};
+    document.getElementById('sidebarAvatar').textContent = (ME.name||'?')[0].toUpperCase();
+  });
+
+  listenPath(`purchases/${uid}`, s => {
+    DATA.purchases = s.val()||{};
+    if (document.getElementById('nav-purchase')?.classList.contains('active')) renderPurchase();
+    if (document.getElementById('nav-dashboard')?.classList.contains('active')) renderDashboard();
+  });
+
+  listenPath(`pointHistory/${uid}`, s => {
+    DATA.pointHistory = s.val()||{};
+    if (document.getElementById('nav-points')?.classList.contains('active')) renderPoints();
+  });
+
+  listenPath(`submits/${uid}`, s => {
+    DATA.submits = s.val()||{};
+    if (document.getElementById('nav-submit')?.classList.contains('active')) renderSubmit();
+    if (document.getElementById('nav-approvals')?.classList.contains('active')) renderApprovals();
+    if (document.getElementById('nav-dashboard')?.classList.contains('active')) renderDashboard();
+  });
+
+  listenPath(`chat/${cid}`, s => {
+    DATA.chat = s.val()||{};
+    if (document.getElementById('nav-chat')?.classList.contains('active')) renderChatPage();
+  });
+
+  if (ME.role === 'owner') {
+    // 모든 직원 구독
+    listenPath(`users`, s => {
+      const all = s.val()||{};
+      DATA.employees = Object.fromEntries(
+        Object.entries(all).filter(([,v])=>v.companyId===ME.companyId && v.role==='staff')
+      );
+      if (document.getElementById('nav-employees')?.classList.contains('active')) renderEmployees();
+      if (document.getElementById('nav-dashboard')?.classList.contains('active')) renderDashboard();
+    });
+    // 모든 제출물
+    listenPath(`allSubmits/${cid}`, s => {
+      DATA.allSubmits = s.val()||{};
+      if (document.getElementById('nav-approvals')?.classList.contains('active')) renderApprovals();
+    });
+  }
+}
+
+// ────────────────────────────────────────────
+// PAGES
+// ────────────────────────────────────────────
+
+// ── DASHBOARD ──
+function renderDashboard() {
+  const p     = DATA.profile;
+  const grade = getGrade(p.totalSpend||0);
+  const isOwner = ME.role==='owner';
+  const empCount = Object.keys(DATA.employees||{}).length;
+  const purchList = Object.values(DATA.purchases||{}).sort((a,b)=>b.createdAt-a.createdAt).slice(0,5);
+  const submitList= Object.values(DATA.submits||{}).sort((a,b)=>b.createdAt-a.createdAt).slice(0,5);
+
+  document.getElementById('mainContent').innerHTML = `
+    <div class="pageHeader"><div><div class="pageTitle">대시보드</div><div class="pageSubtitle">${ME.name}님, 오늘도 좋은 하루 되세요 👋</div></div></div>
+    <div class="statGrid">
+      <div class="statCard"><div class="statLabel">보유 포인트</div><div class="statValue" style="color:var(--gold)">${fmt(p.points)}</div><div class="statSub">P</div></div>
+      <div class="statCard"><div class="statLabel">총 구매 실적</div><div class="statValue">${fmt(p.totalSpend)}</div><div class="statSub">원</div></div>
+      <div class="statCard"><div class="statLabel">등급</div><div class="statValue" style="font-size:16px;margin-top:4px"><span class="gradeBadge grade-${grade.cls}">${grade.emoji} ${grade.name}</span></div></div>
+      ${isOwner?`<div class="statCard"><div class="statLabel">직원 수</div><div class="statValue">${empCount}</div><div class="statSub">명</div></div>`:''}
+      ${isOwner?`<div class="statCard"><div class="statLabel">회사 코드</div><div class="statValue" style="font-size:18px;letter-spacing:2px">${ME.companyCode||'—'}</div><div class="statSub">직원 초대용</div></div>`:''}
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div class="panel">
+        <div class="panelTitle">🛒 최근 구매</div>
+        <table class="table"><thead><tr><th>상품</th><th>금액</th><th>상태</th></tr></thead>
+        <tbody>${purchList.map(p=>`<tr><td>${p.item}</td><td>${fmt(p.amount)}원</td><td><span class="tag tag-complete">완료</span></td></tr>`).join('')||'<tr><td colspan="3" style="text-align:center;color:var(--muted);padding:20px">없음</td></tr>'}</tbody></table>
+      </div>
+      <div class="panel">
+        <div class="panelTitle">✅ 최근 제출</div>
+        <table class="table"><thead><tr><th>제목</th><th>상태</th></tr></thead>
+        <tbody>${submitList.map(s=>`<tr><td>${s.title}</td><td><span class="tag tag-${s.status==='승인'?'complete':s.status==='반려'?'reject':'pending'}">${s.status||'대기'}</span></td></tr>`).join('')||'<tr><td colspan="2" style="text-align:center;color:var(--muted);padding:20px">없음</td></tr>'}</tbody></table>
+      </div>
+    </div>`;
+}
+
+// ── PURCHASE ──
+function renderPurchase() {
+  const list = Object.values(DATA.purchases||{}).sort((a,b)=>b.createdAt-a.createdAt);
+  document.getElementById('mainContent').innerHTML = `
+    <div class="pageHeader"><div><div class="pageTitle">구매</div><div class="pageSubtitle">상품 구매 및 포인트 적립</div></div></div>
+    <div style="display:grid;grid-template-columns:1fr 320px;gap:16px">
+      <div class="panel">
+        <div class="panelTitle">📦 구매 내역</div>
+        <table class="table"><thead><tr><th>상품명</th><th>카테고리</th><th>금액</th><th>적립P</th><th>날짜</th></tr></thead>
+        <tbody>${list.map(p=>`<tr>
+          <td><div style="font-weight:500">${p.item}</div><div style="font-size:11px;color:var(--muted)">${p.memo||''}</div></td>
+          <td style="color:var(--muted)">${p.category||''}</td>
+          <td>${fmt(p.amount)}원</td>
+          <td><span class="pointBadge">+${fmt(p.earnedPoints)}P</span></td>
+          <td style="color:var(--muted);font-size:11px">${fmtDate(p.createdAt)}</td>
+        </tr>`).join('')||'<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:40px">구매 내역 없음</td></tr>'}</tbody></table>
+      </div>
+      <div class="panel">
+        <div class="panelTitle">🛍 새 구매</div>
+        <div class="formGroup"><label>상품명</label><input id="piItem" placeholder="상품명"></div>
+        <div class="formGroup"><label>금액 (원)</label><input id="piAmount" type="number" placeholder="0"></div>
+        <div class="formGroup"><label>카테고리</label>
+          <select id="piCat"><option>소프트웨어</option><option>하드웨어</option><option>서비스</option><option>교육</option><option>기타</option></select>
+        </div>
+        <div class="formGroup"><label>메모</label><textarea id="piMemo" placeholder="추가 설명..."></textarea></div>
+        <button class="btn btn-accent" style="width:100%" onclick="addPurchase()">구매 등록</button>
+      </div>
+    </div>`;
+}
+
+window.addPurchase = async () => {
+  const item   = document.getElementById('piItem').value.trim();
+  const amount = parseInt(document.getElementById('piAmount').value);
+  const cat    = document.getElementById('piCat').value;
+  const memo   = document.getElementById('piMemo').value.trim();
+  if (!item || !amount || amount<1) { showToast('상품명과 금액을 입력해주세요','error'); return; }
+
+  const snap   = await get(ref(db,`users/${CU.uid}`));
+  const profile= snap.val()||{};
+  const grade  = getGrade(profile.totalSpend||0);
+  const earned = Math.floor(amount * grade.rate);
+
+  await push(ref(db,`purchases/${CU.uid}`),{item,amount,category:cat,memo,earnedPoints:earned,status:'완료',createdAt:nowMs()});
+  await update(ref(db,`users/${CU.uid}`),{points:(profile.points||0)+earned, totalSpend:(profile.totalSpend||0)+amount});
+  await push(ref(db,`pointHistory/${CU.uid}`),{desc:`구매 적립 — ${item}`,amount:earned,type:'earn',createdAt:nowMs()});
+  showToast(`+${fmt(earned)}P 적립 완료!`,'success');
+};
+
+// ── POINTS ──
+function renderPoints() {
+  const p    = DATA.profile;
+  const hist = Object.values(DATA.pointHistory||{}).sort((a,b)=>b.createdAt-a.createdAt);
+  const earned = hist.filter(h=>h.type==='earn').reduce((a,b)=>a+(b.amount||0),0);
+  const used   = hist.filter(h=>h.type==='use' ).reduce((a,b)=>a+(b.amount||0),0);
+
+  document.getElementById('mainContent').innerHTML = `
+    <div class="pageHeader"><div><div class="pageTitle">포인트</div></div></div>
+    <div class="statGrid" style="grid-template-columns:repeat(3,1fr)">
+      <div class="statCard"><div class="statLabel">보유</div><div class="statValue" style="color:var(--gold)">${fmt(p.points)}</div><div class="statSub">P</div></div>
+      <div class="statCard"><div class="statLabel">총 적립</div><div class="statValue" style="color:var(--green)">${fmt(earned)}</div><div class="statSub">P</div></div>
+      <div class="statCard"><div class="statLabel">총 사용</div><div class="statValue" style="color:var(--red)">${fmt(used)}</div><div class="statSub">P</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 300px;gap:16px">
+      <div class="panel">
+        <div class="panelTitle">📊 포인트 내역</div>
+        <table class="table"><thead><tr><th>내용</th><th>포인트</th><th>날짜</th></tr></thead>
+        <tbody>${hist.map(h=>`<tr>
+          <td>${h.desc}</td>
+          <td style="color:${h.type==='earn'?'var(--green)':'var(--red)'};font-weight:600">${h.type==='earn'?'+':'-'}${fmt(Math.abs(h.amount))}P</td>
+          <td style="color:var(--muted);font-size:11px">${fmtDate(h.createdAt)}</td>
+        </tr>`).join('')||'<tr><td colspan="3" style="text-align:center;color:var(--muted);padding:40px">내역 없음</td></tr>'}</tbody></table>
+      </div>
+      <div>
+        <div class="panel">
+          <div class="panelTitle">💸 포인트 사용</div>
+          <div class="formGroup"><label>사용 포인트</label><input id="useP" type="number" placeholder="0"></div>
+          <div class="formGroup"><label>사용 내역</label><input id="useD" placeholder="사용 내용"></div>
+          <button class="btn btn-accent" style="width:100%" onclick="usePoints()">사용하기</button>
+        </div>
+        <div class="panel">
+          <div class="panelTitle">ℹ️ 안내</div>
+          <p style="font-size:12px;color:var(--muted);line-height:1.8">
+            · 구매 금액의 1%~5% 자동 적립<br>
+            · 등급이 높을수록 적립률 UP<br>
+            · 1포인트 = 1원 가치
+          </p>
+        </div>
+      </div>
+    </div>`;
+}
+
+window.usePoints = async () => {
+  const amount = parseInt(document.getElementById('useP').value);
+  const desc   = document.getElementById('useD').value.trim();
+  if (!amount||amount<1) { showToast('포인트를 입력해주세요','error'); return; }
+  if (!desc)             { showToast('사용 내역을 입력해주세요','error'); return; }
+  const snap = await get(ref(db,`users/${CU.uid}`));
+  const p    = snap.val()||{};
+  if ((p.points||0)<amount) { showToast('포인트가 부족합니다','error'); return; }
+  await update(ref(db,`users/${CU.uid}`),{points:(p.points||0)-amount});
+  await push(ref(db,`pointHistory/${CU.uid}`),{desc:`포인트 사용 — ${desc}`,amount,type:'use',createdAt:nowMs()});
+  showToast(`${fmt(amount)}P 사용 완료`,'success');
+};
+
+// ── GRADE ──
+function renderGrade() {
+  const p     = DATA.profile;
+  const spend = p.totalSpend||0;
+  const grade = getGrade(spend);
+  const idx   = GRADES.indexOf(grade);
+  const next  = GRADES[idx+1];
+  const pct   = next ? Math.min(100,((spend-grade.min)/(next.min-grade.min))*100) : 100;
+
+  document.getElementById('mainContent').innerHTML = `
+    <div class="pageHeader"><div><div class="pageTitle">회사 등급</div></div></div>
+    <div class="panel" style="max-width:560px;margin-bottom:16px">
+      <div class="panelTitle">🏅 현재 등급</div>
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px">
+        <span class="gradeBadge grade-${grade.cls}" style="font-size:15px;padding:7px 18px">${grade.emoji} ${grade.name}</span>
+        <div><div style="font-size:12px;color:var(--muted)">총 구매 실적</div><div style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700">${fmt(spend)}원</div></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted)">${next?`<span>${grade.name}</span><span>${next.name}까지 ${fmt(next.min-spend)}원</span>`:'<span>최고 등급</span><span>✨ VIP 달성!</span>'}</div>
+      <div class="gradeProgressBar"><div class="gradeProgressFill" style="width:${pct}%"></div></div>
+    </div>
+    <div class="panel">
+      <div class="panelTitle">📋 등급 기준</div>
+      <table class="table"><thead><tr><th>등급</th><th>구매 실적</th><th>혜택</th><th>적립률</th></tr></thead>
+      <tbody>
+        <tr><td><span class="gradeBadge grade-bronze">🥉 브론즈</span></td><td>~499,999원</td><td>기본 서비스</td><td>1%</td></tr>
+        <tr><td><span class="gradeBadge grade-silver">🥈 실버</span></td><td>50만~199만원</td><td>전담 상담사</td><td>1.5%</td></tr>
+        <tr><td><span class="gradeBadge grade-gold">🥇 골드</span></td><td>200만~499만원</td><td>우선 처리+보고서</td><td>2%</td></tr>
+        <tr><td><span class="gradeBadge grade-diamond">💎 다이아</span></td><td>500만~999만원</td><td>VIP 지원+쿠폰</td><td>3%</td></tr>
+        <tr><td><span class="gradeBadge grade-vip">👑 VIP</span></td><td>1000만원+</td><td>전용 매니저</td><td>5%</td></tr>
+      </tbody></table>
+    </div>`;
+}
+
+// ── CHAT ──
+function renderChatPage() {
+  const msgs = Object.entries(DATA.chat||{})
+    .map(([id,v])=>({id,...v}))
+    .sort((a,b)=>a.createdAt-b.createdAt);
+
+  if (!document.getElementById('chatMessages')) {
+    document.getElementById('mainContent').innerHTML = `
+      <div class="pageHeader"><div><div class="pageTitle">대화</div><div class="pageSubtitle">팀원과 실시간 소통</div></div></div>
+      <div class="chatWrap">
+        <div class="chatMessages" id="chatMessages"></div>
+        <div class="chatInputRow">
+          <input id="chatInp" placeholder="메시지 입력..." onkeydown="if(event.key==='Enter')sendChat()">
+          <button class="btn btn-accent" onclick="sendChat()">보내기</button>
+        </div>
+      </div>`;
+  }
+
+  const container = document.getElementById('chatMessages');
+  if (!container) return;
+  const rendered = new Set([...container.querySelectorAll('[data-id]')].map(e=>e.dataset.id));
+  if (!msgs.length && !rendered.size) {
+    container.innerHTML = '<div class="emptyState"><div class="emptyIcon">💬</div>첫 메시지를 보내보세요!</div>';
+    return;
+  }
+  const empty = container.querySelector('.emptyState');
+  if (empty) empty.remove();
+
+  msgs.forEach(m => {
+    if (rendered.has(m.id)) return;
+    const mine = m.uid === CU.uid;
+    const isOwnerMsg = m.role === 'owner';
+    const div = document.createElement('div');
+    div.className = `chatMsg${mine?' mine':''}`;
+    div.dataset.id = m.id;
+    div.innerHTML = `
+      <div class="chatAvatar${mine?' mine':isOwnerMsg?' owner':''}">${(m.name||'?')[0].toUpperCase()}</div>
+      <div class="chatBubble">
+        ${!mine?`<div class="chatSender">${m.name}${isOwnerMsg?' 👑':''} · ${m.companyName||''}</div>`:''}
+        <div class="chatText">${m.text}</div>
+        <div class="chatTime">${fmtDate(m.createdAt)}</div>
+      </div>`;
+    container.appendChild(div);
+  });
+  container.scrollTop = container.scrollHeight;
+}
+
+window.sendChat = async () => {
+  const inp  = document.getElementById('chatInp');
+  const text = inp?.value.trim();
+  if (!text || !CU) return;
+  inp.value = '';
+  await push(ref(db,`chat/${ME.companyId}`),{
+    uid:CU.uid, name:ME.name, companyName:ME.companyName, role:ME.role, text, createdAt:nowMs()
+  });
+};
+
+// ── SUBMIT ──
+function renderSubmit() {
+  const list = Object.entries(DATA.submits||{})
+    .map(([id,v])=>({id,...v}))
+    .sort((a,b)=>b.createdAt-a.createdAt);
+
+  document.getElementById('mainContent').innerHTML = `
+    <div class="pageHeader"><div><div class="pageTitle">제출 (완료)</div><div class="pageSubtitle">완료 업무를 제출하고 승인을 받으세요</div></div></div>
+    <div style="display:grid;grid-template-columns:1fr 340px;gap:16px">
+      <div class="panel">
+        <div class="panelTitle">📋 제출 목록</div>
+        <table class="table"><thead><tr><th>제목</th><th>카테고리</th><th>날짜</th><th>상태</th></tr></thead>
+        <tbody>${list.map(s=>`<tr>
+          <td><div style="font-weight:500">${s.title}</div><div style="font-size:11px;color:var(--muted)">${(s.content||'').slice(0,40)}${(s.content||'').length>40?'…':''}</div></td>
+          <td><span class="tag tag-pending">${s.category}</span></td>
+          <td style="color:var(--muted);font-size:11px">${s.date||fmtDate(s.createdAt)}</td>
+          <td><span class="tag tag-${s.status==='승인'?'complete':s.status==='반려'?'reject':'pending'}">${s.status||'대기'}</span></td>
+        </tr>`).join('')||'<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:40px">제출 내역 없음</td></tr>'}</tbody></table>
+      </div>
+      <div class="panel">
+        <div class="panelTitle">📤 새 제출</div>
+        <div class="formGroup"><label>제목</label><input id="stTitle" placeholder="업무 제목"></div>
+        <div class="formGroup"><label>카테고리</label>
+          <select id="stCat"><option>프로젝트</option><option>보고서</option><option>계약</option><option>기획</option><option>기타</option></select>
+        </div>
+        <div class="formGroup"><label>내용</label><textarea id="stContent" placeholder="완료된 내용..."></textarea></div>
+        <div class="formGroup"><label>완료일</label><input type="date" id="stDate" value="${today()}"></div>
+        <button class="btn btn-accent" style="width:100%" onclick="addSubmit()">제출하기</button>
+      </div>
+    </div>`;
+}
+
+window.addSubmit = async () => {
+  const title   = document.getElementById('stTitle').value.trim();
+  const cat     = document.getElementById('stCat').value;
+  const content = document.getElementById('stContent').value.trim();
+  const date    = document.getElementById('stDate').value;
+  if (!title||!content) { showToast('제목과 내용을 입력해주세요','error'); return; }
+
+  const key = await push(ref(db,`submits/${CU.uid}`),{
+    title, category:cat, content, date, status:'대기',
+    name:ME.name, companyId:ME.companyId, uid:CU.uid, createdAt:nowMs()
+  });
+  // 사장이 볼 수 있도록 allSubmits에도 저장
+  await set(ref(db,`allSubmits/${ME.companyId}/${CU.uid}_${key.key}`),{
+    title, category:cat, content, date, status:'대기',
+    name:ME.name, uid:CU.uid, submitKey:key.key, createdAt:nowMs()
+  });
+  showToast('제출 완료!','success');
+};
+
+// ── EMPLOYEES (사장) ──
+function renderEmployees() {
+  if (ME.role!=='owner') return;
+  const emps = Object.entries(DATA.employees||{}).map(([id,v])=>({id,...v}));
+
+  document.getElementById('mainContent').innerHTML = `
+    <div class="pageHeader">
+      <div><div class="pageTitle">직원 관리</div><div class="pageSubtitle">회사 코드: <strong style="color:var(--accent);letter-spacing:2px">${ME.companyCode}</strong> (직원에게 공유하세요)</div></div>
+    </div>
+    <div class="panel">
+      <div class="panelTitle">👥 직원 목록 (${emps.length}명)</div>
+      <table class="table"><thead><tr><th>이름</th><th>이메일</th><th>등급</th><th>포인트</th><th>구매 실적</th><th>가입일</th><th>관리</th></tr></thead>
+      <tbody>${emps.map(e=>{
+        const g=getGrade(e.totalSpend||0);
+        return `<tr>
+          <td style="font-weight:500">${e.name}</td>
+          <td style="color:var(--muted);font-size:12px">${e.email}</td>
+          <td><span class="gradeBadge grade-${g.cls}">${g.emoji} ${g.name}</span></td>
+          <td><span class="pointBadge">${fmt(e.points)}P</span></td>
+          <td>${fmt(e.totalSpend)}원</td>
+          <td style="color:var(--muted);font-size:11px">${fmtDate(e.createdAt)}</td>
+          <td style="display:flex;gap:5px;flex-wrap:wrap">
+            <button class="btn btn-gold btn-sm" onclick="openPointModal('${e.id}','${e.name}',${e.points||0})">포인트</button>
+            <button class="btn btn-outline btn-sm" onclick="openGradeModal('${e.id}','${e.name}')">등급</button>
+            <button class="btn btn-danger btn-sm" onclick="fireEmployee('${e.id}','${e.name}')">삭제</button>
+          </td>
+        </tr>`;
+      }).join('')||'<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:40px">직원이 없습니다. 회사 코드를 공유하세요!</td></tr>'}</tbody></table>
+    </div>`;
+}
+
+window.openPointModal = (uid, name, cur) => {
+  const m = document.createElement('div');
+  m.className = 'modalOverlay';
+  m.innerHTML = `
+    <div class="modal">
+      <div class="modalTitle">⭐ ${name} 포인트 관리</div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:16px">현재 보유: <strong style="color:var(--gold)">${fmt(cur)}P</strong></p>
+      <div class="formGroup"><label>포인트 수량</label><input id="mPAmt" type="number" placeholder="0"></div>
+      <div class="formGroup"><label>사유</label><input id="mPDesc" placeholder="지급/차감 사유"></div>
+      <div class="modalActions">
+        <button class="btn btn-outline" onclick="this.closest('.modalOverlay').remove()">취소</button>
+        <button class="btn btn-danger" onclick="adjustPoint('${uid}',${cur},'차감')">차감</button>
+        <button class="btn btn-accent" onclick="adjustPoint('${uid}',${cur},'지급')">지급</button>
+      </div>
+    </div>`;
+  document.body.appendChild(m);
+};
+
+window.adjustPoint = async (uid, cur, type) => {
+  const amt  = parseInt(document.getElementById('mPAmt').value);
+  const desc = document.getElementById('mPDesc').value.trim();
+  if (!amt||amt<1) { showToast('수량을 입력해주세요','error'); return; }
+  if (!desc)       { showToast('사유를 입력해주세요','error'); return; }
+  const newPt = type==='지급' ? cur+amt : Math.max(0,cur-amt);
+  await update(ref(db,`users/${uid}`),{points:newPt});
+  await push(ref(db,`pointHistory/${uid}`),{
+    desc:`사장 ${type} — ${desc}`, amount:amt,
+    type:type==='지급'?'earn':'use', createdAt:nowMs()
+  });
+  document.querySelector('.modalOverlay')?.remove();
+  showToast(`${fmt(amt)}P ${type} 완료`,'success');
+};
+
+window.openGradeModal = (uid, name) => {
+  const m = document.createElement('div');
+  m.className = 'modalOverlay';
+  m.innerHTML = `
+    <div class="modal">
+      <div class="modalTitle">🏅 ${name} 등급 변경</div>
+      <div class="formGroup"><label>등급 선택</label>
+        <select id="mGrade">
+          ${GRADES.map(g=>`<option value="${g.min}">${g.emoji} ${g.name}</option>`).join('')}
+        </select>
+      </div>
+      <div class="modalActions">
+        <button class="btn btn-outline" onclick="this.closest('.modalOverlay').remove()">취소</button>
+        <button class="btn btn-accent" onclick="changeGrade('${uid}')">변경</button>
+      </div>
+    </div>`;
+  document.body.appendChild(m);
+};
+
+window.changeGrade = async uid => {
+  const minVal = parseInt(document.getElementById('mGrade').value);
+  await update(ref(db,`users/${uid}`),{totalSpend:minVal});
+  document.querySelector('.modalOverlay')?.remove();
+  showToast('등급 변경 완료','success');
+};
+
+window.fireEmployee = async (uid, name) => {
+  if (!confirm(`${name} 직원을 삭제하시겠습니까?\n(계정 정보는 유지되나 회사에서 제거됩니다)`)) return;
+  await update(ref(db,`users/${uid}`),{companyId:null,companyName:null,companyCode:null});
+  showToast(`${name} 직원이 삭제되었습니다`,'info');
+};
+
+// ── APPROVALS (사장) ──
+function renderApprovals() {
+  if (ME.role!=='owner') return;
+  const all = Object.entries(DATA.allSubmits||{})
+    .map(([id,v])=>({id,...v}))
+    .sort((a,b)=>b.createdAt-a.createdAt);
+
+  document.getElementById('mainContent').innerHTML = `
+    <div class="pageHeader"><div><div class="pageTitle">승인 관리</div><div class="pageSubtitle">직원들의 제출물을 검토하세요</div></div></div>
+    <div class="panel">
+      <div class="panelTitle">📋 전체 제출물 (${all.length}건)</div>
+      <table class="table"><thead><tr><th>제출자</th><th>제목</th><th>카테고리</th><th>완료일</th><th>상태</th><th>관리</th></tr></thead>
+      <tbody>${all.map(s=>`<tr>
+        <td style="font-weight:500">${s.name}</td>
+        <td>
+          <div style="font-weight:500">${s.title}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">${(s.content||'').slice(0,50)}${(s.content||'').length>50?'…':''}</div>
+        </td>
+        <td><span class="tag tag-pending">${s.category}</span></td>
+        <td style="color:var(--muted);font-size:11px">${s.date||fmtDate(s.createdAt)}</td>
+        <td><span class="tag tag-${s.status==='승인'?'complete':s.status==='반려'?'reject':'pending'}">${s.status||'대기'}</span></td>
+        <td style="display:flex;gap:5px">
+          ${s.status==='대기'||!s.status?`
+            <button class="btn btn-green btn-sm" onclick="approveSubmit('${s.id}','${s.uid}','${s.submitKey}','승인')">승인</button>
+            <button class="btn btn-danger btn-sm" onclick="approveSubmit('${s.id}','${s.uid}','${s.submitKey}','반려')">반려</button>
+          `:`<span style="font-size:12px;color:var(--muted)">처리완료</span>`}
+        </td>
+      </tr>`).join('')||'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:40px">제출물이 없습니다</td></tr>'}</tbody></table>
+    </div>`;
+}
+
+window.approveSubmit = async (allId, staffUid, submitKey, status) => {
+  await update(ref(db,`allSubmits/${ME.companyId}/${allId}`),{status});
+  if (submitKey) await update(ref(db,`submits/${staffUid}/${submitKey}`),{status});
+  showToast(`${status} 처리 완료`,'success');
+};
+
+</script>
+</body>
+</html>
